@@ -53,7 +53,7 @@ RUN cd repo && git init && \
     git remote add origin https://github.com/c4th4r5y5/azerothcore-wotlk.git && \
     git fetch --depth 1 origin cluster-mode-playerbots && \
     git checkout FETCH_HEAD && \
-    git submodule update --init --depth 1 modules/mod-playerbots
+    git submodule update --init --depth 1 modules/mod-playerbots modules/mod-multibot-bridge modules/mod-dungeon-clear
 
 # Shared library (unversioned name; ABI is in tc9_version.h / TC9GetVersion)
 COPY --from=build-sidecar /build/libsidecar-cpp/build/libsidecar.so ./repo/deps/libsidecar/libsidecar.so
