@@ -120,6 +120,10 @@ ENTRYPOINT ["./dbimport"]
 
 FROM ubuntu:22.04 AS gameserver
 
+# Auto-create missing databases (e.g. a newly-added module DB) instead of
+# blocking forever on a stdin prompt the container will never receive.
+ENV AC_DISABLE_INTERACTIVE=1
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       libmysqlclient21 libreadline8 \
