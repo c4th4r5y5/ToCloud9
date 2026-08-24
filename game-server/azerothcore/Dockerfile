@@ -50,14 +50,10 @@ RUN update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang 100
 
 RUN mkdir repo
 RUN cd repo && git init && \
-    git remote add origin https://github.com/azerothcore/azerothcore-wotlk.git && \
-    git fetch --depth 1 origin 0c0a3327926e4664c86ac4a5322a1596ddf4fdaa && \
-    git checkout FETCH_HEAD
-
-COPY game-server/azerothcore/patches /tmp/azerothcore-patches
-RUN cd /repo && \
-    git apply --check /tmp/azerothcore-patches/*.patch && \
-    git apply /tmp/azerothcore-patches/*.patch
+    git remote add origin https://github.com/c4th4r5y5/azerothcore-wotlk.git && \
+    git fetch --depth 1 origin cluster-mode-playerbots && \
+    git checkout FETCH_HEAD && \
+    git submodule update --init --depth 1 modules/mod-playerbots
 
 # Shared library (unversioned name; ABI is in tc9_version.h / TC9GetVersion)
 COPY --from=build-sidecar /build/libsidecar-cpp/build/libsidecar.so ./repo/deps/libsidecar/libsidecar.so
@@ -85,6 +81,7 @@ RUN cd bin && \
         -DUSE_SCRIPTPCH=1 \
         -DTOOLS_BUILD=db-only \
         -DSCRIPTS=static \
+        -DMODULES=static \
         -DSERVERS=1 \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DCMAKE_INSTALL_PREFIX=/repo/bin \
@@ -110,6 +107,7 @@ COPY --from=build-sidecar /build/libsidecar-cpp/build/libsidecar.so /usr/lib/lib
 
 # The paths are hardcoded in the binary
 COPY --from=build-core /repo/data /repo/data
+COPY --from=build-core /repo/modules /repo/modules
 COPY --from=build-core /repo/bin/bin/dbimport /repo/bin/dbimport
 COPY --from=build-core /repo/bin/etc/dbimport.conf.dist /repo/bin/etc/dbimport.conf
 
@@ -129,6 +127,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=build-sidecar /build/libsidecar-cpp/build/libsidecar.so /usr/lib/libsidecar.so
+
+# Base SQL + module SQL, at the same absolute path the binary was compiled with
+# (BuiltInConfig::GetSourceDirectory()), so the built-in DB auto-migration can find them.
+COPY --from=build-core /repo/data /repo/data
+COPY --from=build-core /repo/modules /repo/modules
 
 COPY --from=build-core /repo/bin/etc/worldserver.conf.dist /repo/bin/etc/worldserver.conf
 COPY --from=build-core /repo/bin/bin/worldserver /repo/bin/worldserver
