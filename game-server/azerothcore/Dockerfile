@@ -50,9 +50,7 @@ RUN update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang 100
 
 RUN mkdir repo
 
-# Busts the layer cache for the fetch below — without this, Docker caches the
-# clone purely on the RUN command's text, so a later push to the same branch
-# is silently ignored and the image ends up rebuilt from stale source.
+# Busts the layer cache for the fetch below so pushes aren't silently stale.
 ARG CACHEBUST=1
 
 RUN cd repo && git init && \

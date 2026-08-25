@@ -85,9 +85,7 @@ TC9_API int TC9NatsSubscribe(const char* subject, TC9NatsMessageHandler handler)
 TC9_API void TC9PlayerLeftBattleground(uint64_t playerGUID, uint32_t realmID, uint32_t instanceID);
 TC9_API void TC9BattlegroundStatusChanged(uint32_t instanceID, uint8_t status);
 
-/* Group: accept a pending invite on behalf of playerGUID (e.g. for a bot
- * character, which has no real client to click "Accept"). Returns 0 on
- * success, -1 on failure (not connected, RPC error, or no pending invite). */
+/* Accepts a pending group invite on behalf of playerGUID. 0 on success, -1 on failure. */
 TC9_API int TC9GroupAcceptInvite(uint32_t realmID, uint64_t playerGUID);
 
 /* Event hooks registration */
