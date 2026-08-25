@@ -133,7 +133,8 @@ TC9_API void TC9InitLib(
         g_state.grpc_clients->Connect(
             config.servers_registry_address(),
             config.guid_provider_address(),
-            config.matchmaking_address()
+            config.matchmaking_address(),
+            config.group_address()
         );
 
         // In cross-realm mode this server hosts several realms and player GUIDs
@@ -348,6 +349,14 @@ TC9_API int TC9NatsPublish(const char* subject, const char* payload, int payload
 
     std::string data = payloadLen > 0 ? std::string(payload, payloadLen) : std::string();
     return g_state.nats_publisher->Publish(subject, data) ? 0 : -1;
+}
+
+TC9_API int TC9GroupAcceptInvite(uint32_t realmID, uint64_t playerGUID) {
+    if (!g_state.initialized || !g_state.grpc_clients) {
+        return -1;
+    }
+
+    return g_state.grpc_clients->AcceptGroupInvite(realmID, playerGUID) ? 0 : -1;
 }
 
 TC9_API int TC9NatsSubscribe(const char* subject, TC9NatsMessageHandler handler) {
