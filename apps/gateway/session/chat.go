@@ -32,6 +32,9 @@ const (
 	ChatTypePartyLeader = 0x33
 )
 
+// LangAddon marks a CMsgMessageChat sent via SendAddonMessage, regardless of chat type.
+const LangAddon uint32 = 0xFFFFFFFF
+
 func (s *GameSession) SendSysMessage(msg string) {
 	resp := packet.NewWriterWithSize(packet.SMsgMessageChat, 0)
 	resp.Uint8(uint8(ChatTypeSystem)) // chatType
@@ -54,6 +57,13 @@ func (s *GameSession) HandleChatMessage(ctx context.Context, p *packet.Packet) e
 		Uint32("msgType", msgType).
 		Uint32("language", lang).
 		Msg("HandleChatMessage received")
+
+	if lang == LangAddon {
+		if s.worldSocket != nil {
+			s.worldSocket.WriteChannel() <- p
+		}
+		return nil
+	}
 
 	to := ""
 	msg := ""
