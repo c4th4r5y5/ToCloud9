@@ -49,6 +49,12 @@ RUN update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
 RUN update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang 100
 
 RUN mkdir repo
+
+# Busts the layer cache for the fetch below — without this, Docker caches the
+# clone purely on the RUN command's text, so a later push to the same branch
+# is silently ignored and the image ends up rebuilt from stale source.
+ARG CACHEBUST=1
+
 RUN cd repo && git init && \
     git remote add origin https://github.com/c4th4r5y5/azerothcore-wotlk.git && \
     git fetch --depth 1 origin cluster-mode-playerbots && \
