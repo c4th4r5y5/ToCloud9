@@ -305,4 +305,41 @@ bool GrpcClients::AcceptGroupInvite(uint32_t realm_id, uint64_t player_guid) {
     return true;
 }
 
+bool GrpcClients::InviteToGroup(uint32_t realm_id, uint64_t inviter_guid, uint64_t invitee_guid,
+                                 const std::string& inviter_name, const std::string& invitee_name) {
+    if (!connected_ || !group_stub_) {
+        spdlog::error("Group client not connected");
+        return false;
+    }
+
+    v1::InviteParams request;
+    request.set_api(LIB_VERSION);
+    request.set_realmid(realm_id);
+    request.set_inviter(inviter_guid);
+    request.set_invited(invitee_guid);
+    request.set_invitername(inviter_name);
+    request.set_invitedname(invitee_name);
+
+    v1::InviteResponse response;
+    grpc::ClientContext context;
+    context.set_deadline(Deadline());
+
+    grpc::Status status = group_stub_->Invite(&context, request, &response);
+
+    if (!status.ok()) {
+        spdlog::error("Invite RPC failed: {} - {}",
+                     status.error_code(), status.error_message());
+        return false;
+    }
+
+    if (response.status() != v1::InviteResponse::Ok) {
+        spdlog::warn("Invite from {} to {} on realm {} returned status {}",
+                    inviter_guid, invitee_guid, realm_id, static_cast<int>(response.status()));
+        return false;
+    }
+
+    spdlog::info("✅ Invited player {} to group with {}", invitee_guid, inviter_guid);
+    return true;
+}
+
 }  // namespace tc9

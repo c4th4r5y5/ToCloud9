@@ -88,6 +88,10 @@ TC9_API void TC9BattlegroundStatusChanged(uint32_t instanceID, uint8_t status);
 /* Accepts a pending group invite on behalf of playerGUID. 0 on success, -1 on failure. */
 TC9_API int TC9GroupAcceptInvite(uint32_t realmID, uint64_t playerGUID);
 
+/* Creates a group invite from inviterGUID to inviteeGUID. 0 on success, -1 on failure. */
+TC9_API int TC9GroupInvite(uint32_t realmID, uint64_t inviterGUID, uint64_t inviteeGUID,
+                            const char* inviterName, const char* inviteeName);
+
 /* Event hooks registration */
 TC9_API void TC9SetOnGroupCreatedHook(OnGroupCreatedHook h);
 TC9_API void TC9SetOnGroupMemberAddedHook(OnGroupMemberAddedHook h);
