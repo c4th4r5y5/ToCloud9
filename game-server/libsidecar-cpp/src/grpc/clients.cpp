@@ -306,7 +306,8 @@ bool GrpcClients::AcceptGroupInvite(uint32_t realm_id, uint64_t player_guid) {
 }
 
 bool GrpcClients::InviteToGroup(uint32_t realm_id, uint64_t inviter_guid, uint64_t invitee_guid,
-                                 const std::string& inviter_name, const std::string& invitee_name) {
+                                 const std::string& inviter_name, const std::string& invitee_name,
+                                 uint32_t inviter_map_id, const std::string& inviter_game_server_id) {
     if (!connected_ || !group_stub_) {
         spdlog::error("Group client not connected");
         return false;
@@ -319,6 +320,8 @@ bool GrpcClients::InviteToGroup(uint32_t realm_id, uint64_t inviter_guid, uint64
     request.set_invited(invitee_guid);
     request.set_invitername(inviter_name);
     request.set_invitedname(invitee_name);
+    request.set_invitermapid(inviter_map_id);
+    request.set_invitergameserverid(inviter_game_server_id);
 
     v1::InviteResponse response;
     grpc::ClientContext context;

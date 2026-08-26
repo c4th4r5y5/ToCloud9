@@ -63,7 +63,8 @@ public:
     // Group Client
     bool AcceptGroupInvite(uint32_t realm_id, uint64_t player_guid);
     bool InviteToGroup(uint32_t realm_id, uint64_t inviter_guid, uint64_t invitee_guid,
-                        const std::string& inviter_name, const std::string& invitee_name);
+                        const std::string& inviter_name, const std::string& invitee_name,
+                        uint32_t inviter_map_id, const std::string& inviter_game_server_id);
 
     void Shutdown();
 

@@ -360,13 +360,14 @@ TC9_API int TC9GroupAcceptInvite(uint32_t realmID, uint64_t playerGUID) {
 }
 
 TC9_API int TC9GroupInvite(uint32_t realmID, uint64_t inviterGUID, uint64_t inviteeGUID,
-                            const char* inviterName, const char* inviteeName) {
+                            const char* inviterName, const char* inviteeName, uint32_t inviterMapID) {
     if (!g_state.initialized || !g_state.grpc_clients) {
         return -1;
     }
 
     return g_state.grpc_clients->InviteToGroup(realmID, inviterGUID, inviteeGUID,
-        inviterName ? inviterName : "", inviteeName ? inviteeName : "") ? 0 : -1;
+        inviterName ? inviterName : "", inviteeName ? inviteeName : "",
+        inviterMapID, g_state.assigned_server_id) ? 0 : -1;
 }
 
 TC9_API int TC9NatsSubscribe(const char* subject, TC9NatsMessageHandler handler) {
