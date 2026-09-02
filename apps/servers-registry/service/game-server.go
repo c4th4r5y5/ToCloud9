@@ -23,6 +23,7 @@ type GameServer interface {
 	ListAll(ctx context.Context) ([]repo.GameServer, error)
 	MapsLoadedForServer(ctx context.Context, serverID string, maps []uint32) (*repo.GameServer, error)
 	RedistributeRealm(ctx context.Context, realmID uint32) error
+	HasRegisteredServers(ctx context.Context) (bool, error)
 }
 
 func (g *gameServerImpl) RedistributeRealm(ctx context.Context, realmID uint32) error {
@@ -327,6 +328,15 @@ func (g *gameServerImpl) ListAll(ctx context.Context) ([]repo.GameServer, error)
 	}
 
 	return servers, nil
+}
+
+func (g *gameServerImpl) HasRegisteredServers(ctx context.Context) (bool, error) {
+	servers, err := g.r.ListAll(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return len(servers) > 0, nil
 }
 
 func (g *gameServerImpl) ListOfCrossRealms(ctx context.Context) ([]repo.GameServer, error) {

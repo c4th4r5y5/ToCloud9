@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -66,7 +67,7 @@ func main() {
 	}
 	defer rdb.Close()
 
-	healthChecker := healthandmetrics.NewHealthChecker(time.Second*4, 4, healthandmetrics.NewHttpHealthCheckProcessor(time.Second*15))
+	healthChecker := healthandmetrics.NewHealthChecker(time.Second*4, 4, conf.HealthCheckMaxFails, healthandmetrics.NewHttpHealthCheckProcessor(time.Second*15))
 	go healthChecker.Start()
 
 	metricsConsumer := healthandmetrics.NewMetricsConsumer(time.Second*5, 3, healthandmetrics.NewHttpPrometheusMetricsReader(time.Second))
@@ -121,6 +122,20 @@ func main() {
 		registryService,
 	)
 
+	startedAt := time.Now()
+	gracePeriod := time.Duration(conf.HealthCheckGracePeriodSecs) * time.Second
+	healthServer := server.NewHealthServer(conf.HealthCheckPort, func(ctx context.Context) (bool, error) {
+		if time.Since(startedAt) < gracePeriod {
+			return true, nil
+		}
+		return gameServersService.HasRegisteredServers(ctx)
+	})
+	go func() {
+		if err := healthServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal().Err(err).Msg("can't serve health check")
+		}
+	}()
+
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	wg := sync.WaitGroup{}
@@ -130,6 +145,9 @@ func main() {
 		fmt.Println("")
 		log.Info().Msgf("🧨 Got signal %v, attempting graceful shutdown...", sig)
 		grpcServer.GracefulStop()
+		if err := healthServer.Shutdown(context.Background()); err != nil {
+			log.Error().Err(err).Msg("can't shutdown health check server")
+		}
 		wg.Done()
 	}()
 

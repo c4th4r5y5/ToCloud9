@@ -82,6 +82,9 @@ func (s *layerServersStub) ListOfCrossRealms(context.Context) ([]repo.GameServer
 	return nil, nil
 }
 func (s *layerServersStub) ListAll(context.Context) ([]repo.GameServer, error) { return nil, nil }
+func (s *layerServersStub) HasRegisteredServers(context.Context) (bool, error) {
+	return len(s.servers) > 0, nil
+}
 func (s *layerServersStub) MapsLoadedForServer(context.Context, string, []uint32) (*repo.GameServer, error) {
 	return nil, nil
 }

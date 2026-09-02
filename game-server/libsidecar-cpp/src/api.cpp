@@ -370,6 +370,14 @@ TC9_API int TC9GroupInvite(uint32_t realmID, uint64_t inviterGUID, uint64_t invi
         inviterMapID, g_state.assigned_server_id) ? 0 : -1;
 }
 
+TC9_API int TC9GroupLeave(uint32_t realmID, uint64_t playerGUID) {
+    if (!g_state.initialized || !g_state.grpc_clients) {
+        return -1;
+    }
+
+    return g_state.grpc_clients->LeaveGroup(realmID, playerGUID) ? 0 : -1;
+}
+
 TC9_API int TC9NatsSubscribe(const char* subject, TC9NatsMessageHandler handler) {
     if (!subject || !handler) {
         return -1;

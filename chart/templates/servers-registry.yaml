@@ -27,16 +27,29 @@ spec:
           value: nats://{{ .Release.Name }}-nats:4222
         - name: LAYER_MAPS
           value: "{{- range $index, $map := .Values.servers_registry.layering.maps }}{{ if $index }};{{ end }}{{ $map.mapID }}:{{ $map.layers }}{{- end }}"
+        - name: HEALTH_CHECK_PORT
+          value: "8900"
+        - name: HEALTH_CHECK_GRACE_PERIOD_SECS
+          value: {{ default 180 .Values.servers_registry.healthCheckGracePeriodSecs | quote }}
         ports:
         - containerPort: {{ .Values.servers_registry.service.internalPort | int  }}
-        # livenessProbe:
-        #   httpGet:
-        #     path: /healthcheck
-        #     port: {{ .Values.servers_registry.service.internalPort | int }}
-        # readinessProbe:
-        #   httpGet:
-        #     path: /healthcheck
-        #     port: {{ .Values.servers_registry.service.internalPort | int }}
+        - containerPort: 8900
+        livenessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8900
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8900
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
         securityContext:
           capabilities:
             drop: ["ALL"]
@@ -62,3 +75,21 @@ spec:
     protocol: TCP
   selector:
     app: {{ $fullname }}-servers-registry
+
+---
+# Only the registry's single replica knows the live game-server set; losing
+# it to a voluntary disruption (node drain, cluster-autoscaler) rather than
+# an actual health failure would cause the exact "can't find an instance"
+# symptom this chart's probes are meant to catch. This blocks voluntary
+# evictions of the pod unless a replacement is already available.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}-servers-registry
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: {{ $fullname }}-servers-registry

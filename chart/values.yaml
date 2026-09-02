@@ -47,6 +47,7 @@ servers_registry:
     type: ClusterIP
     internalPort: 8999
     externalPort: 8999
+  healthCheckGracePeriodSecs: 180
   layering:
     # Fixed per-map layer counts. Runtime updates are persisted in Redis.
     # maps:

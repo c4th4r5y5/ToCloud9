@@ -35,11 +35,15 @@ type healthCheckResult struct {
 type healthChecker struct {
 	delay           time.Duration
 	processorsCount int
+	maxFails        int
 
 	processor HealthCheckProcessor
 
 	objectsMu sync.RWMutex
 	objects   []HealthCheckObject
+
+	failuresMu sync.Mutex
+	failures   map[string]int
 
 	observersMu      sync.RWMutex
 	successObservers []HealthCheckSuccessObserver
@@ -49,11 +53,16 @@ type healthChecker struct {
 	queue   chan HealthCheckObject
 }
 
-func NewHealthChecker(delay time.Duration, processorsCount int, processor HealthCheckProcessor) HealthChecker {
+func NewHealthChecker(delay time.Duration, processorsCount int, maxConsecutiveFails int, processor HealthCheckProcessor) HealthChecker {
+	if maxConsecutiveFails <= 0 {
+		maxConsecutiveFails = 1
+	}
 	return &healthChecker{
 		delay:           delay,
 		processorsCount: processorsCount,
+		maxFails:        maxConsecutiveFails,
 		processor:       processor,
+		failures:        map[string]int{},
 		results:         make(chan healthCheckResult, 100),
 		queue:           make(chan HealthCheckObject, 100),
 	}
@@ -81,9 +90,13 @@ func (h *healthChecker) RemoveHealthCheckObject(object HealthCheckObject) error 
 	for i := range h.objects {
 		if h.objects[i].HealthCheckAddress() == object.HealthCheckAddress() {
 			h.objects = append(h.objects[:i], h.objects[i+1:]...)
-			return nil
+			break
 		}
 	}
+
+	h.failuresMu.Lock()
+	delete(h.failures, object.HealthCheckAddress())
+	h.failuresMu.Unlock()
 
 	return nil
 }
@@ -134,7 +147,23 @@ func (h *healthChecker) makeIteration() {
 }
 
 func (h *healthChecker) handleResult(result healthCheckResult) {
+	addr := result.obj.HealthCheckAddress()
+
 	if result.err != nil {
+		h.failuresMu.Lock()
+		h.failures[addr]++
+		fails := h.failures[addr]
+		h.failuresMu.Unlock()
+
+		if fails < h.maxFails {
+			// Still within grace period, give it another chance next iteration.
+			return
+		}
+
+		h.failuresMu.Lock()
+		delete(h.failures, addr)
+		h.failuresMu.Unlock()
+
 		h.RemoveHealthCheckObject(result.obj)
 
 		h.observersMu.RLock()
@@ -144,6 +173,10 @@ func (h *healthChecker) handleResult(result healthCheckResult) {
 			observer(result.obj, result.err)
 		}
 	} else {
+		h.failuresMu.Lock()
+		delete(h.failures, addr)
+		h.failuresMu.Unlock()
+
 		h.observersMu.RLock()
 		defer h.observersMu.RUnlock()
 
